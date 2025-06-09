@@ -96,18 +96,24 @@ class TracOsHandler:
     async def create_workorder(self, workorder: TracOSWorkorder) -> None:
         """Write workorder to MongoDB"""
         try:
-            # Create dictionary and set isSynced to True for new workorders
             workorder_dict = dict(workorder)
-                
-            result = await self.collection.replace_one(
-                {"_id": workorder_dict["_id"]},
-                workorder_dict,
-                upsert=True # Use upsert to create or update the workorder
-            )
-            if result.upserted_id:
-                logger.info(f"New workorder created with ID: {result.upserted_id}")
+            
+            existing_doc = await self.collection.find_one({"number": workorder_dict["number"]})
+            
+            if existing_doc:
+                original_id = existing_doc["_id"]
+                if "_id" in workorder_dict:
+                    del workorder_dict["_id"]
+                    
+                result = await self.collection.update_one(
+                    {"_id": original_id},
+                    {"$set": workorder_dict}
+                )
+                logger.info(f"Workorder with number {workorder_dict['number']} updated successfully")
             else:
-                logger.info(f"Workorder {workorder_dict['_id']} updated successfully")
+                result = await self.collection.insert_one(workorder_dict)
+                logger.info(f"New workorder created with ID: {result.inserted_id}")
+                
         except Exception as e:
             logger.error(f"Failed to create workorder: {e}")
             raise

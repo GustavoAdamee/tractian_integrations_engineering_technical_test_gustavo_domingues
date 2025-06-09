@@ -2,7 +2,7 @@
 name = "integrations-engineering-code-assesment"
 version = "0.1.0"
 description = "Async Python project for bidirectional workorder integration between systems"
-authors = ["Your Name <gusadomingues@gmail.com>"]
+authors = ["<gusadomingues@gmail.com>"]
 package-mode = false
 
 [build-system]
@@ -14,10 +14,17 @@ python = "^3.11,<3.12"
 python-decouple = "3.8"
 loguru = "^0.7.2"
 motor = "^3.1.1"            # Async MongoDB driver
-pytest = "^7.4.0"
+pytest = ">=7.4.0,<8.0.0"
+pytest-asyncio = "0.21.1"
 
 [tool.poetry.group.formatting.dependencies]
 black = "^23.3.0"
+
+
+[tool.poetry.group.dev.dependencies]
+mongomock = "^4.3.0"
+mongomock-motor = "^0.0.36"
+typing-extensions = "^4.14.0"
 
 [tool.black]
 line-length = 88

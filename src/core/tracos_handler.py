@@ -58,12 +58,12 @@ class TracOsHandler:
         workorder_dict = dict(workorder)
         
         # Add isSynced=False if it doesn't exist
-        if "isSynced" not in workorder_dict:
-            workorder_dict["isSynced"] = False
+        # if "isSynced" not in workorder_dict:
+        #     workorder_dict["isSynced"] = False
             
         return workorder_dict
 
-    async def get_unsynced_workorders(self) -> List[Dict]:
+    async def get_unsynced_workorders(self) -> List[TracOSWorkorder]:
         """Read workorders from MongoDB that need to be synced
         
         Fetches documents that either:

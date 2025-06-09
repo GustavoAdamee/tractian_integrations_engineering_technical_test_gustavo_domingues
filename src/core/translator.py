@@ -96,9 +96,9 @@ class Translator:
             is_deleted = workorder.get('deleted', False)
             is_synced = False
 
-            creation_date = self.date_to_iso_8601(workorder.get('createdAt'))
-            last_update_date = self.date_to_iso_8601(workorder.get('updatedAt'))
-            deleted_date = self.date_to_iso_8601(workorder.get('deletedAt')) if workorder.get('deletedAt') is not None else None
+            creation_date = self.date_to_iso_8601(workorder.get('createdAt')).isoformat()
+            last_update_date = self.date_to_iso_8601(workorder.get('updatedAt')).isoformat()
+            deleted_date = self.date_to_iso_8601(workorder.get('deletedAt')).isoformat() if workorder.get('deletedAt') is not None else None
 
             result = CustomerSystemWorkorder(
                 orderNo=workorder.get('number'),
@@ -199,9 +199,9 @@ class Translator:
                 date = date.astimezone(datetime.timezone.utc)
                 logger.debug("Converted timezone to UTC")
             
-            result = date.isoformat()
-            logger.debug(f"Date conversion successful: {original_date} -> {result}")
-            return result
+            # result = date.isoformat()
+            logger.debug(f"Date conversion successful: {original_date} -> {date}")
+            return date
             
         except Exception as e:
             logger.error(f"Failed to convert date {date} to ISO 8601 format: {str(e)}")

@@ -56,5 +56,26 @@ class CustomerHandler:
             logger.error(f"Failed to create workorder {workorder['orderNo']}: {e}")
             raise e
     
-
+    # Probably will not be necessary duo to the flow of the application
+    def mark_as_synced(self, orderNO: int) -> None:
+        """Mark workorder as synced on the outbound folder"""
+        try:
+            file_path = os.path.join(self.outbound_folder, f"workorder_{orderNO}.json")
+            
+            if not os.path.exists(file_path):
+                logger.warning(f"File {file_path} does not exist. Cannot mark as synced.")
+                return
+            
+            with open(file_path, 'r+', encoding='utf-8') as f:
+                workorder = json.load(f)
+                workorder['isSynced'] = True
+                f.seek(0)
+                json.dump(workorder, f, default=str, indent=4)
+                f.truncate()
+            
+            logger.info(f"Marked workorder {orderNO} as synced.")
+        
+        except Exception as e:
+            logger.error(f"Failed to mark workorder {orderNO} as synced: {e}")
+            raise e
 

@@ -17,7 +17,7 @@ class TracOsHandler:
         self.collection = None
 
     # TODO: Implement Simple retry or reconnect logic for MongoDB failures
-    async def connect(self):
+    async def connect(self) -> None:
         """Connect to MongoDB"""
         try:
             self.client = AsyncIOMotorClient(self.mongo_db_uri)
@@ -29,7 +29,7 @@ class TracOsHandler:
             logger.error(f"Failed to connect to MongoDB: {e}")
             raise
 
-    async def disconnect(self):
+    async def disconnect(self) -> None:
         """Disconnect from MongoDB"""
         if self.client:
             self.client.close()

@@ -32,8 +32,8 @@ async def test_tracos_handler_workflow():
         # 1. Add the workorder to the collection
         await handler.create_workorder(workorder)
         
-        # 2. Test get_workorders returns unsynced workorders
-        unsynced = await handler.get_workorders()
+        # 2. Test get_unsynced_workorders returns unsynced workorders
+        unsynced = await handler.get_unsynced_workorders()
         assert len(unsynced) == 1
         assert unsynced[0]["_id"] == "integration_test_123"
         

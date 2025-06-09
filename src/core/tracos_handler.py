@@ -63,7 +63,7 @@ class TracOsHandler:
             
         return workorder_dict
 
-    async def get_workorders(self) -> List[Dict]:
+    async def get_unsynced_workorders(self) -> List[Dict]:
         """Read workorders from MongoDB that need to be synced
         
         Fetches documents that either:

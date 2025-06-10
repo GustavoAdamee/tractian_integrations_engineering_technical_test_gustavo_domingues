@@ -20,5 +20,9 @@ class InboundProcessor:
         for workerorder in inbound_workorder:
             translated_workorders.append(self.translator.customer_to_tracos(workerorder))
 
+        # TODO: Check if it is necessary to add a validation step here
+        # for example, it is not possible to have a status "completed" if value before was "cancelled"
         for workorder in translated_workorders:
             await self.tracos_handler.create_workorder(workorder)
+
+        await self.tracos_handler.disconnect()

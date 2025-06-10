@@ -20,6 +20,11 @@ class TracOsHandler:
     # TODO: Implement Simple retry or reconnect logic for MongoDB failures
     async def connect(self) -> None:
         """Connect to MongoDB"""
+        # Skip connection if client is already set (for testing)
+        if self.client is not None:
+            logger.info("Using pre-configured MongoDB client (test mode)")
+            return
+            
         try:
             self.client = AsyncIOMotorClient(self.mongo_db_uri)
             self.db = self.client[self.db_name]

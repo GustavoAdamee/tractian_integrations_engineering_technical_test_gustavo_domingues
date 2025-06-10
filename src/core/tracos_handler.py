@@ -15,6 +15,7 @@ class TracOsHandler:
         self.client = None
         self.db = None
         self.collection = None
+        logger.info("TracOsHandler module initialized")
 
     # TODO: Implement Simple retry or reconnect logic for MongoDB failures
     async def connect(self) -> None:

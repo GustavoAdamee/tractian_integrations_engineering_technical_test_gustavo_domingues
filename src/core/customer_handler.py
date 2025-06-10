@@ -8,6 +8,7 @@ class CustomerHandler:
     def __init__(self):
         self.inbound_folder = os.getenv("DATA_INBOUND_DIR", "data/inbound")
         self.outbound_folder = os.getenv("DATA_OUTBOUND_DIR", "data/outbound")
+        logger.info("CustomerHandler module initialized")
 
     
     def get_workorders(self) -> List[CustomerSystemWorkorder]:

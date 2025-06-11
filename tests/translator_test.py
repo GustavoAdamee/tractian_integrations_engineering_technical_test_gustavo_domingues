@@ -115,8 +115,8 @@ class TestTranslatorCustomerToTracos:
         assert result["status"] == "in_progress"  # isActive == True
         assert result["title"] == sample_customer_workorder["summary"]
         assert result["description"] == sample_customer_workorder["summary"]
-        assert isinstance(result["createdAt"], str)
-        assert isinstance(result["updatedAt"], str)
+        assert isinstance(result["createdAt"], datetime.datetime)
+        assert isinstance(result["updatedAt"], datetime.datetime)
         assert result["deleted"] == False
         assert result["deletedAt"] is None
 
@@ -168,25 +168,29 @@ class TestDateConversion:
         """Test conversion of MongoDB date format"""
         mongo_date = {"$date": "2023-05-10T18:01:57.719Z"}
         result = translator.date_to_iso_8601(mongo_date)
-        assert result == "2023-05-10T18:01:57.719000+00:00"
+        expected = datetime.datetime(2023, 5, 10, 18, 1, 57, 719000, tzinfo=datetime.timezone.utc)
+        assert result == expected
     
     def test_iso_string_format(self, translator):
         """Test conversion of ISO string format"""
         iso_date = "2023-05-10T18:01:57.719Z"
         result = translator.date_to_iso_8601(iso_date)
-        assert result == "2023-05-10T18:01:57.719000+00:00"
+        expected = datetime.datetime(2023, 5, 10, 18, 1, 57, 719000, tzinfo=datetime.timezone.utc)
+        assert result == expected
     
     def test_datetime_object(self, translator):
         """Test conversion of datetime object"""
         dt = datetime.datetime(2023, 5, 10, 18, 1, 57, 719000)
         result = translator.date_to_iso_8601(dt)
-        assert result == "2023-05-10T18:01:57.719000+00:00"
+        expected = datetime.datetime(2023, 5, 10, 18, 1, 57, 719000, tzinfo=datetime.timezone.utc)
+        assert result == expected
     
     def test_datetime_with_timezone(self, translator):
         """Test conversion of datetime with timezone"""
         dt = datetime.datetime(2023, 5, 10, 18, 1, 57, 719000, tzinfo=timezone.utc)
         result = translator.date_to_iso_8601(dt)
-        assert result == "2023-05-10T18:01:57.719000+00:00"
+        expected = datetime.datetime(2023, 5, 10, 18, 1, 57, 719000, tzinfo=datetime.timezone.utc)
+        assert result == expected
     
     def test_invalid_format(self, translator):
         """Test handling of invalid date formats"""

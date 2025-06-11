@@ -4,73 +4,13 @@ import datetime
 from bson import ObjectId
 from loguru import logger
 
-'''
-TRACOS format:
-
-class TracOSWorkorder(TypedDict):
-    _id: ObjectId
-    number: int
-    status: Literal["pending", "in_progress", "completed", "on_hold", "cancelled"]
-    title: str
-    description: str
-    createdAt: datetime
-    updatedAt: datetime
-    deleted: bool
-    deletedAt: datetime | None = None
-
-Example:
-    {
-    "number": 1,
-    "status": "cancelled",
-    "title": "Example workorder #1",
-    "description": "Example workorder #1 description",
-    "createdAt": {
-        "$date": "2025-05-10T18:01:57.719Z"
-    },
-    "updatedAt": {
-        "$date": "2025-05-10T19:01:57.719Z"
-    },
-    "deleted": false
-    }
-'''
-
-'''
-COSTUMER SERVICE format:
-
-class CustomerSystemWorkorder(TypedDict):
-    orderNo: int
-    isActive: bool
-    isCanceled: bool
-    isDeleted: bool
-    isDone: bool
-    isOnHold: bool
-    isPending: bool
-    isSynced: bool
-    summary: str
-    creationDate: datetime
-    lastUpdateDate: datetime
-    deletedDate: datetime | None = None
-
-Example:
-    {
-    "orderNo": 1,
-    "isCanceled": true,
-    "isDeleted": false,
-    "isDone": false,
-    "isOnHold": false,
-    "isPending": false,
-    "summary": "Example workorder #1",
-    "creationDate": "2025-05-10T18:01:57.763724+00:00",
-    "lastUpdateDate": "2025-05-10T19:01:57.763724+00:00",
-    "deletedDate": null
-    }
-'''
 
 class Translator:
     def __init__(self):
         logger.info("Translator module initialized")
 
     def tracos_to_costumer(self, workorder: TracOSWorkorder) -> CustomerSystemWorkorder:
+        """Translate a TracOS workorder to Customer format."""
         logger.debug(f"Starting TracOS to Customer translation for workorder {workorder.get('number', 'unknown')}")
         
         try:
@@ -124,6 +64,7 @@ class Translator:
             raise
 
     def customer_to_tracos(self, workorder: CustomerSystemWorkorder) -> TracOSWorkorder:
+        """Translate a Customer workorder to TracOS format."""
         logger.debug(f"Starting Customer to TracOS translation for workorder {workorder.get('orderNo', 'unknown')}")
         
         try:
@@ -170,6 +111,7 @@ class Translator:
             raise
 
     def date_to_iso_8601(self, date) -> str:
+        """Convert various date formats to ISO 8601 format."""
         if date is None:
             logger.debug("Date conversion: received None, returning empty string")
             return ""
@@ -182,7 +124,6 @@ class Translator:
                 logger.debug("Detected MongoDB date format")
                 date = date['$date']
             
-            # Handle string dates
             if isinstance(date, str):
                 if 'T' in date:
                     date = datetime.datetime.fromisoformat(date.replace('Z', '+00:00'))
@@ -191,7 +132,6 @@ class Translator:
                     date = datetime.datetime.fromisoformat(date)
                     logger.debug("Parsed simple format string to datetime")
             
-            # Ensure UTC timezone
             if date.tzinfo is None:
                 date = date.replace(tzinfo=datetime.timezone.utc)
                 logger.debug("Added UTC timezone to naive datetime")
@@ -199,7 +139,6 @@ class Translator:
                 date = date.astimezone(datetime.timezone.utc)
                 logger.debug("Converted timezone to UTC")
             
-            # result = date.isoformat()
             logger.debug(f"Date conversion successful: {original_date} -> {date}")
             return date
             

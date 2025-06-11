@@ -6,6 +6,7 @@ from loguru import logger
 import os
 import asyncio
 
+
 class TracOsHandler:
     def __init__(self):
         self.mongo_db_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017")
@@ -54,6 +55,7 @@ class TracOsHandler:
             self.collection = self.db[self.collection_name]
             await self.client.admin.command('ping')
             logger.info("Successfully reconnected to MongoDB")
+
         except Exception as e:
             logger.error(f"Failed to reconnect to MongoDB: {e}")
             raise
@@ -81,11 +83,7 @@ class TracOsHandler:
             logger.info("Disconnected from MongoDB")
 
     def parse_data(self, doc: Dict[str, Any]) -> TracOSWorkorder:
-        """Parse MongoDB document into TracOSWorkorder object
-        
-        This function helps normalize the data structure and ensures
-        the isSynced field is properly handled.
-        """
+        """Parse MongoDB document into TracOSWorkorder object"""
         
         workorder = TracOSWorkorder(
             _id=doc["_id"],
@@ -101,10 +99,6 @@ class TracOsHandler:
         
         # Convert to dictionary to add the isSynced field
         workorder_dict = dict(workorder)
-        
-        # Add isSynced=False if it doesn't exist
-        # if "isSynced" not in workorder_dict:
-        #     workorder_dict["isSynced"] = False
             
         return workorder_dict
 
@@ -161,13 +155,16 @@ class TracOsHandler:
         
         async def _mark_operation():
             utc_time = datetime.now(timezone.utc)
+            
             result = await self.collection.update_one(
                 {"_id": workorder_id},
                 {"$set": {"isSynced": True, "syncedAt": utc_time}}
             )
+            
             if result.modified_count == 0:
                 logger.warning(f"No workorder found with ID: {workorder_id}")
                 return
+            
             logger.info(f"Marked workorder {workorder_id} as synced at {utc_time}")
         
         await self._retry_operation(_mark_operation)

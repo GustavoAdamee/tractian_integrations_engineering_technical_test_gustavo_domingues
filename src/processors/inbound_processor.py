@@ -5,13 +5,16 @@ from setup import TracOSWorkorder
 from setup import CustomerSystemWorkorder
 from loguru import logger
 
+
 class InboundProcessor:
     def __init__(self):
         self.tracos_handler = TracOsHandler()
         self.customer_handler = CustomerHandler()
         self.translator = Translator()
+        logger.info("InboundProcessor initialized")
 
     async def process(self) -> None:
+        """Process inbound workorders from the customer system and create them in TracOS."""
         logger.info("Starting inbound processing")
         await self.tracos_handler.connect()
         

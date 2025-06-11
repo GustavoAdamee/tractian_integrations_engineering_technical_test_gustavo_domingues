@@ -1,10 +1,10 @@
-from math import log
 from motor.motor_asyncio import AsyncIOMotorClient
 from setup import TracOSWorkorder
 from typing import List, Dict, Any
 from datetime import datetime, timezone
 from loguru import logger
 import os
+import asyncio
 
 class TracOsHandler:
     def __init__(self):
@@ -12,28 +12,67 @@ class TracOsHandler:
         self.db_name = os.getenv("MONGO_DATABASE", "tractian")
         self.collection_name = os.getenv("MONGO_COLLECTION", "workorders")
         
+        self.max_retries = int(os.getenv("MONGO_MAX_RETRIES", "3"))
+        self.retry_delay = float(os.getenv("MONGO_RETRY_DELAY", "1.0"))
+        
         self.client = None
         self.db = None
         self.collection = None
         logger.info("TracOsHandler module initialized")
 
-    # TODO: Implement Simple retry or reconnect logic for MongoDB failures
+    async def _retry_operation(self, operation, *args, **kwargs):
+        """Generic retry wrapper for MongoDB operations"""
+        last_exception = None   # Store the last exception to raise if all retries fail
+        
+        for attempt in range(self.max_retries + 1):
+            try:
+                return await operation(*args, **kwargs)
+            except Exception as e:
+                last_exception = e
+                if attempt < self.max_retries:
+                    logger.warning(f"MongoDB operation failed (attempt {attempt + 1}/{self.max_retries + 1}): {e}")
+                    await asyncio.sleep(self.retry_delay)   # Sleep before retrying
+                    
+                    # Try to reconnect on connection errors
+                    if "connection" in str(e).lower():
+                        await self._reconnect()
+                    
+                    # TODO: Implement immediate fail for critical errors
+                else:
+                    logger.error(f"MongoDB operation failed after {self.max_retries + 1} attempts: {e}")
+        
+        raise last_exception
+
+    async def _reconnect(self):
+        """Attempt to reconnect to MongoDB"""
+        try:
+            if self.client:
+                self.client.close()
+            
+            self.client = AsyncIOMotorClient(self.mongo_db_uri)
+            self.db = self.client[self.db_name]
+            self.collection = self.db[self.collection_name]
+            await self.client.admin.command('ping')
+            logger.info("Successfully reconnected to MongoDB")
+        except Exception as e:
+            logger.error(f"Failed to reconnect to MongoDB: {e}")
+            raise
+
     async def connect(self) -> None:
-        """Connect to MongoDB"""
+        """Connect to MongoDB with retry logic"""
         # Skip connection if client is already set (for testing)
         if self.client is not None:
             logger.info("Using pre-configured MongoDB client (test mode)")
             return
-            
-        try:
+        
+        async def _connect_operation():
             self.client = AsyncIOMotorClient(self.mongo_db_uri)
             self.db = self.client[self.db_name]
             self.collection = self.db[self.collection_name]
             await self.client.admin.command('ping')
             logger.info(f"Connected to MongoDB at {self.mongo_db_uri}")
-        except Exception as e:
-            logger.error(f"Failed to connect to MongoDB: {e}")
-            raise
+        
+        await self._retry_operation(_connect_operation)
 
     async def disconnect(self) -> None:
         """Disconnect from MongoDB"""
@@ -70,13 +109,9 @@ class TracOsHandler:
         return workorder_dict
 
     async def get_unsynced_workorders(self) -> List[TracOSWorkorder]:
-        """Read workorders from MongoDB that need to be synced
+        """Read workorders from MongoDB that need to be synced with retry logic"""
         
-        Fetches documents that either:
-        - Have isSynced = False, or
-        - Don't have the isSynced field at all (created by setup.py)
-        """
-        try:
+        async def _get_operation():
             # Query for records that either have isSynced=False OR don't have the field
             query = {
                 "$or": [
@@ -94,14 +129,13 @@ class TracOsHandler:
                 
             logger.info(f"Fetched {len(workorders)} unsynced workorders from MongoDB")
             return workorders
-
-        except Exception as e:
-            logger.error(f"Failed to fetch workorders: {e}")
-            raise
+        
+        return await self._retry_operation(_get_operation)
 
     async def create_workorder(self, workorder: TracOSWorkorder) -> None:
-        """Write workorder to MongoDB"""
-        try:
+        """Write workorder to MongoDB with retry logic"""
+        
+        async def _create_operation():
             workorder_dict = dict(workorder)
             
             existing_doc = await self.collection.find_one({"number": workorder_dict["number"]})
@@ -119,14 +153,13 @@ class TracOsHandler:
             else:
                 result = await self.collection.insert_one(workorder_dict)
                 logger.info(f"New workorder created with ID: {result.inserted_id}")
-                
-        except Exception as e:
-            logger.error(f"Failed to create workorder: {e}")
-            raise
+        
+        await self._retry_operation(_create_operation)
 
     async def mark_as_synced(self, workorder_id) -> None:
-        """Mark workorder as synced"""
-        try:
+        """Mark workorder as synced with retry logic"""
+        
+        async def _mark_operation():
             utc_time = datetime.now(timezone.utc)
             result = await self.collection.update_one(
                 {"_id": workorder_id},
@@ -136,6 +169,5 @@ class TracOsHandler:
                 logger.warning(f"No workorder found with ID: {workorder_id}")
                 return
             logger.info(f"Marked workorder {workorder_id} as synced at {utc_time}")
-        except Exception as e:
-            logger.error(f"Failed to mark workorder as synced: {e}")
-            raise
+        
+        await self._retry_operation(_mark_operation)

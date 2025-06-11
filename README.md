@@ -1,168 +1,220 @@
-# Take-Home Challenge: TracOS ↔ Client Integration Flow
+# TracOS ↔ Client Integration Service
 
-## Introduction
+An asynchronous Python service that enables bidirectional work order synchronization between Tractian's CMMS (TracOS) and customer ERP systems.
 
-This repository contains a technical assesment to evaluate your skills on a simulated scenario of an integration between Tractian's CMMS (TracOS) and a customer's ERP.
+## Architecture Overview
 
-The test objective is to build an asynchronous Python service that simulates an integration between our CMMS (TracOS) and a customer's ERP software, containing both an inbound (client → TracOS) and outbound (TracOS → client) flows. The integration focus is to sync work orders between the systems.
+This integration service follows a modular, extensible architecture designed to handle multiple customer integrations without modifying core components.
 
-The customer's system will be simulated by JSON files representing API responses. Our system will be represented by a MongoDB instance.
+### Core Components
 
-Create at least three modules: one to handle read/write on our system (TracOS), one to handle read/write on the customer's system and one to handle translations between systems. The main objective by creating these modules is to have a project where it is easy to add an integration to another system, without needing to modify the existing modules, only expanding them.
+- **Processors**: Handle the main business logic for inbound and outbound flows
+- **Handlers**: Manage data operations for TracOS (MongoDB) and Customer systems (File-based)
+- **Translator**: Manages data transformation between different system formats
+- **Main**: Orchestrates the entire synchronization pipeline
 
-Notes: 
-- The dependency management in this project must be done using Poetry.
-- There is a docker-compose to create a MongoDB instance, figure out how to use it.
-- There is a setup.py file that creates samples workorders on our system and on the customer's system (JSON file). You need to run this after you create the MongoDB instance with docker-compose. That file also has some tips on how to build your own code.
+### System Architecture
 
-The main objectives of this assesment are to demonstrate:
+![System Architecture](assets/tractian_challange.drawio.svg)
 
-- Clarity in functional requirements  
-- Attention to expected system behavior  
-- Code organization for future maintenance  
-
----
-
-## What the System Must Do
-
-1. **Inbound**  
-   - Read JSON files (simulating the client's API response) from an input folder  
-   - For each work order:  
-     - Validate required fields (e.g., `id`, `status`, `createdAt`)  
-     - Translate payload from client format → TracOS format  
-     - Insert or update the record in a MongoDB collection  
-
-2. **Outbound**  
-   - Query MongoDB for work orders with `isSynced = false`  
-   - For each record:  
-     - Translate from TracOS format → client format  
-     - Write the output JSON into an output folder, ready to "send" to the client  
-     - Mark the document in MongoDB with `isSynced = true` and set a `syncedAt` timestamp  
-
-3. **Translation / Normalization**  
-   - Normalize date fields to UTC ISO 8601  
-   - Map enums/status values (e.g., client uses `"NEW"`, TracOS uses `"created"`)  
-
-4. **Resilience**  
-   - Clear success and error logs without unreadable stack traces  
-   - Handle I/O errors (corrupted file, permission issues) gracefully  
-   - Simple retry or reconnect logic for MongoDB failures  
-
----
-
-## Non-Technical Requirements
-
-- **Complete README**: explain how to run and a summary of the chosen architecture
-- **Configuration via environment variables**:  
-  - `MONGO_URI` → MongoDB connection string  
-  - `DATA_INBOUND_DIR` and `DATA_OUTBOUND_DIR` → input/output folders  
-- **Basic tests**:  
-  - Sample input and output JSON  
-  - End-to-end workflow verification (full coverage not required)  
-- **Best practices**: informative logging, readable code, simple modularity  
-
----
-
-## Deliverables
-
-1. Git repository forking this repository, containing:  
-   - Running `main.py` should start the entire pipeline  
-   - Clear modules for:  
-     - Read/write on our system
-     - Read/write on customer's system
-     - Translating data between systems
-2. Complete the `README.md` file with the folder structure and a general overview of how the system works.  
-3. At least **one** automated test with `pytest` testing the end-to-end flow  
-
----
-## Evaluation Criteria
-
-- **Functionality**: inbound/outbound flows work as described  
-- **Robustness**: proper error handling and logging  
-- **Clarity**: self-explanatory, comprehensive README  
-- **Maintainability**: clear separation of concerns, modular code  
-- **Tests**: basic coverage of the main workflow  
-
----
-
-## Setting Up The Project
-
-### Prerequisites
-
-- Python 3.11+
-- Docker and Docker Compose
-- Poetry for dependency management
-
-### Installation Steps
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd integrations-engineering-code-assesment
-   ```
-
-2. **Install dependencies with Poetry**
-   ```bash
-   # Install Poetry if you don't have it
-   curl -sSL https://install.python-poetry.org | python3 -
-   
-   # Install dependencies
-   poetry install
-   ```
-
-3. **Start MongoDB using Docker Compose**
-   ```bash
-   docker-compose up -d
-   ```
-
-4. **Run the setup script to initialize sample data**
-   ```bash
-   poetry run python setup.py
-   ```
-
-5. **Configure environment variables**
-   ```bash
-   # Create a .env file or export directly in your shell
-   echo "MONGO_URI=mongodb://localhost:27017/tractian" > .env
-   echo "DATA_INBOUND_DIR=./data/inbound" >> .env
-   echo "DATA_OUTBOUND_DIR=./data/outbound" >> .env
-   ```
+<!-- Add your flow diagram here -->
 
 ## Project Structure
 
 ```
-integrations-engineering-code-assesment/
-├── docker-compose.yml       # MongoDB container configuration
-├── pyproject.toml           # Poetry configuration
-├── setup.py                 # Setup script for sample data
-├── data/                    # Data directories
-│   ├── inbound/             # Client → TracOS JSON files
-│   └── outbound/            # TracOS → Client JSON files
-├── src/                     # Source code
-│   └── main.py              # Main execution script
-│   ...
-└── tests/                   # Test directory
-|   ...
+tractian_integrations_engineering_technical_test/
+├── src/
+│   ├── main.py                    # Application entry point
+│   ├── core/                      # Core business logic
+│   │   ├── customer_handler.py    # Customer system operations
+│   │   ├── tracos_handler.py      # TracOS MongoDB operations
+│   │   └── translator.py          # Data transformation logic
+│   └── processors/                # Flow processors
+│       ├── inbound_processor.py   # Customer → TracOS flow
+│       └── outbound_processor.py  # TracOS → Customer flow
+├── data/
+│   ├── inbound/                   # Input JSON files from customer
+│   └── outbound/                  # Output JSON files to customer
+├── tests/                         # Tests with pytest
+├── setup.py                       # Sample data generator
+├── docker-compose.yml             # MongoDB container setup
+├── pyproject.toml                 # Poetry dependencies
+└── README.md                      # Original requirements
+```
+
+## Data Flow
+
+### Inbound Flow (Customer → TracOS)
+1. **Read** JSON files from `data/inbound/` directory
+2. **Validate** required fields (orderNo, status, dates)
+3. **Translate** customer format to TracOS format
+4. **Store/Update** work orders in MongoDB
+5. **Log** processing results
+
+### Outbound Flow (TracOS → Customer)
+1. **Query** MongoDB for unsynced work orders (`isSynced: false`)
+2. **Translate** TracOS format to customer format
+3. **Generate** JSON files in `data/outbound/` directory
+4. **Mark** work orders as synced in MongoDB
+5. **Log** synchronization results
+
+## Getting Started
+
+### Prerequisites
+
+- **Python 3.11+**
+- **Docker & Docker Compose**
+- **Poetry** (for dependency management)
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd tractian_integrations_engineering_technical_test_gustavo_domingues
+   ```
+
+2. **Install dependencies**
+   ```bash
+   # Install Poetry if needed
+   curl -sSL https://install.python-poetry.org | python3 -
+   
+   # Install project dependencies
+   poetry install
+   ```
+
+3. **Start MongoDB**
+   ```bash
+   docker-compose up -d mongodb
+   ```
+
+4. **Initialize sample data**
+   ```bash
+   poetry run python setup.py
+   ```
+
+### Configuration
+
+Set environment variables or create a `.env` file:
+
+```bash
+# MongoDB Configuration
+MONGO_URI=mongodb://localhost:27017
+MONGO_DATABASE=tractian
+MONGO_COLLECTION=workorders
+MONGO_MAX_RETRIES=3
+MONGO_RETRY_DELAY=1.0
+
+# Data Directories
+DATA_INBOUND_DIR=data/inbound
+DATA_OUTBOUND_DIR=data/outbound
 ```
 
 ## Running the Application
 
-1. **Execute the main script**
-   ```bash
-   python src/main.py
+### Basic Execution
+```bash
+# Run the complete integration pipeline
+poetry run python src/main.py
+```
+
+### Docker Setup
+```bash
+# Start MongoDB service
+docker-compose up -d
+
+# Verify MongoDB is running
+docker ps
+```
+
+### MongoDB Compass (Recommended)
+
+**MongoDB Compass** is a powerful GUI tool that makes it easy to visualize, query, and manage your MongoDB data during development.
+
+#### Installation
+
+- **Download MongoDB Compass**
+   - Visit: https://www.mongodb.com/try/download/compass
+
+
+#### Connecting to Your Local MongoDB
+
+1. **Open MongoDB Compass**
+2. **Connection String**: Use the default connection or enter:
    ```
+   mongodb://localhost:27017
+   ```
+3. **Click Connect**
+
+#### Using Compass with This Project
+
+Once connected, you can:
+- **Browse Collections**: Navigate to `tractian` database → `workorders` collection
+- **View Documents**: See all work orders in a user-friendly format
+- **Query Data**: Filter work orders by status, dates, or any field
+- **Monitor Changes**: Watch real-time updates as the integration runs
+- **Export Data**: Export collections for backup or analysis
+
+#### Useful Queries for Development
+
+```javascript
+// Find unsynced work orders
+{ "isSynced": false }
+
+// Find orders by status
+{ "status": "IN_PROGRESS" }
+
+// Find recent orders
+{ "createdAt": { "$gte": new Date("2024-01-01") } }
+```
 
 ## Testing
 
-Run the tests with:
+### Running Tests
 ```bash
+# Run all tests
 poetry run pytest
+
+# Run with coverage
+poetry run pytest --cov=src
+
+# Run specific test file
+poetry run pytest tests/test_integration.py -v
+
+# Run with detailed output
+poetry run pytest -v -s
 ```
 
-## Troubleshooting
+### Test Coverage
+- **End-to-end integration tests**
+- **Unit tests for core components**
+- **Mock external dependencies**
+- **Error handling scenarios**
 
-- **MongoDB Connection Issues**: Ensure Docker is running and the MongoDB container is up with `docker ps`
-- **Missing Dependencies**: Verify Poetry environment is activated or run `poetry install` again
-- **Permission Issues**: Check file permissions for data directories
 
+## Key Features
 
+### Resilience & Error Handling
+- **Retry Logic**: MongoDB operations with configurable retry attempts
+- **Connection Recovery**: Automatic reconnection on database failures
+- **Graceful Degradation**: Continue processing on individual record failures
+- **Comprehensive Logging**: Structured logging with loguru
+
+### Data Validation
+- **Required Field Validation**: Ensures critical fields are present
+- **Format Validation**: Validates date formats and data types
+- **Status Mapping**: Proper translation between system status values
+
+### Extensibility
+- **Modular Design**: Easy to add new customer integrations
+- **Handler Pattern**: Swap data sources without changing business logic
+- **Configuration-Driven**: Customize behavior via environment variables
+
+## Future Enhancements!
+
+- **REST API Interface**: HTTP endpoints for external integration
+- **Real-time Synchronization**: WebSocket or message queue integration
+- **Multi-tenant Support**: Handle multiple customer configurations
+- **Advanced Retry Strategies**: Exponential backoff, circuit breakers
+- **Metrics Dashboard**: Monitoring and alerting capabilities
+- **Data Validation Rules**: Configurable business rules engine

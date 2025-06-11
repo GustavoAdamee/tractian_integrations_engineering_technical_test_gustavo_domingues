@@ -212,9 +212,20 @@ poetry run pytest -v -s
 
 ## Future Enhancements!
 
-- **REST API Interface**: HTTP endpoints for external integration
-- **Real-time Synchronization**: WebSocket or message queue integration
+- **Real-time Synchronization**: Message queue integration
 - **Multi-tenant Support**: Handle multiple customer configurations
 - **Advanced Retry Strategies**: Exponential backoff, circuit breakers
 - **Metrics Dashboard**: Monitoring and alerting capabilities
-- **Data Validation Rules**: Configurable business rules engine
+- **Continuous Monitoring Loop**: Automated detection and processing of data changes
+
+### Continuous Monitoring Loop System
+
+Implement a background service that continuously monitors for changes and automatically triggers synchronization processes:
+
+#### Key Features
+- **File System Watching**: Monitor `data/inbound/` for new JSON files using `watchdog` library
+- **Database Change Streams**: Listen to MongoDB change streams for real-time TracOS updates
+- **Configurable Intervals**: Polling-based monitoring with adjustable frequency
+
+
+This enhancement would enable the service to run as a daemon, automatically detecting and processing changes in both directions without manual intervention.
